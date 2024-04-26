@@ -2,7 +2,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class _Settings(BaseSettings):
-    app_secret: str
+    state_secret: str
     sqlalchemy_url: str
     client_id: str
     client_secret: str
