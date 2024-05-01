@@ -1,11 +1,25 @@
-import jwt
-from httpx import AsyncClient, HTTPError
-from jwt import InvalidTokenError
-from pydantic import BaseModel, ConfigDict, ValidationError
+from typing import TYPE_CHECKING
 
-from millserver.exceptions import GetAccessTokenError, InvalidStateError
+import jwt
+from httpx import HTTPError
+from jwt import InvalidTokenError
+from pydantic import BaseModel, ConfigDict, HttpUrl, ValidationError
+
+from millserver.exceptions import (
+    GetAccessTokenError,
+    InvalidStateError,
+    OauthError,
+)
+
+if TYPE_CHECKING:
+    from httpx import AsyncClient
 
 ACCEPT_APPLICATION_JSON_HEADERS = {'accept': 'application/json'}
+USER_API_URL = 'https://api.github.com/user'
+
+
+def create_bearer_auth_header(token):
+    return {'authorization': f'Bearer {token}'}
 
 
 class OauthAccessTokenResponse(BaseModel):
@@ -16,7 +30,19 @@ class OauthAccessTokenResponse(BaseModel):
     model_config = ConfigDict(extra='ignore')
 
 
+class GitHubUserData(BaseModel):
+    login: str
+    avatar_url: HttpUrl
+    model_config = ConfigDict(extra='ignore')
+
+
 class GithubOauth:
+    """
+    - **get_authorize_url**: returns redirect url for user authorization.
+    - **get_access_token**: get access token for oauth provider
+    - **validate_state**:  check that state is valid
+
+    """
     _encode_algorithm = 'HS256'
     _authorize_url = 'https://github.com/login/oauth/authorize'
     _access_token_url = 'https://github.com/login/oauth/access_token'
@@ -45,7 +71,7 @@ class GithubOauth:
             self,
             state: str,
             code: str,
-            http_client: AsyncClient,
+            http_client: 'AsyncClient',
     ) -> str:
         self.validate_state(state)
         token_url = self._access_token_url + (
@@ -65,6 +91,20 @@ class GithubOauth:
             return OauthAccessTokenResponse(**response.json()).access_token
         except ValidationError as error:
             raise GetAccessTokenError('Incorrect server response') from error
+
+    async def get_user_data(
+            self,
+            access_token: str,
+            http_client: 'AsyncClient',
+    ) -> GitHubUserData:
+        try:
+            response = await http_client.get(
+                url=USER_API_URL,
+                headers=create_bearer_auth_header(access_token),
+            )
+            return GitHubUserData.model_validate(response.json())
+        except (HTTPError, ValidationError) as error:
+            raise OauthError('Cant fetch user data') from error
 
     def validate_state(self, state: str):
         try:

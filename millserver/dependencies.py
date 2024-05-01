@@ -1,6 +1,8 @@
 from httpx import AsyncClient
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from millserver.oauth.github import GithubOauth
+from millserver.repository import UserRepository
 from millserver.settings import settings
 
 _github_oauth = GithubOauth(
@@ -19,3 +21,7 @@ _http_client = AsyncClient()
 
 def provide_http_client() -> AsyncClient:
     return _http_client
+
+
+def provide_user_repository(db_session: AsyncSession) -> UserRepository:
+    return UserRepository(session=db_session)
