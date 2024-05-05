@@ -1,14 +1,15 @@
 from httpx import AsyncClient
+from litestar import Request, get
 from litestar.controller import Controller
-from litestar import get, Request
 from litestar.datastructures import State
 
 from millserver.data_transfer import UserDTO
+
 # from millserver.repository import UserRepository
 from millserver.models import User
+from millserver.oauth.github import GithubOauth
 from millserver.schemas import UserData
 from millserver.security.jwt import AccessTokenPayload
-from millserver.oauth.github import create_bearer_auth_header, GithubOauth
 
 
 class UserController(Controller):

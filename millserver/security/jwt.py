@@ -1,5 +1,4 @@
 from datetime import datetime
-from imaplib import Literal
 from uuid import UUID
 
 import jwt

@@ -9,6 +9,7 @@ class _Settings(BaseSettings):
     client_id: str
     client_secret: str
     base_url: str
+    cors_origins: str = ''
 
     model_config = SettingsConfigDict(env_file='.env')
 

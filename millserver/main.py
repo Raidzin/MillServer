@@ -8,21 +8,23 @@ from litestar.openapi import OpenAPIConfig
 from litestar.openapi.spec import Server
 from litestar.response import Redirect
 from litestar.types import Scope
-from sqlalchemy.ext.asyncio import AsyncEngine
 
 from millserver.controllers.oauth import GithubOauthController
 from millserver.controllers.user import UserController
 from millserver.dependencies import (
+    provide_github_oauth,
     provide_http_client,
-    provide_user_repository, provide_github_oauth,
+    provide_user_repository,
 )
 from millserver.models import UUIDBase
-from millserver.security.authentication_middleware import \
-    CookieAuthenticationMiddleware
+from millserver.security.authentication_middleware import (
+    BearerAuthenticationMiddleware,
+)
+from millserver.security.cors import cors_config
 from millserver.settings import settings, sqlalchemy_config
 
 auth_mw = DefineMiddleware(
-    middleware=CookieAuthenticationMiddleware,
+    middleware=BearerAuthenticationMiddleware,
     exclude=['schema', 'oauth'])
 
 
@@ -71,6 +73,7 @@ app = Litestar(
     on_shutdown=[close_http_client],
     after_exception=[after_exception_handler],
     middleware=[auth_mw],
+    cors_config=cors_config,
     plugins=[SQLAlchemyInitPlugin(config=sqlalchemy_config)],
     openapi_config=OpenAPIConfig(
         title='Mill Game Server API',

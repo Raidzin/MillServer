@@ -5,7 +5,7 @@ from litestar.contrib.sqlalchemy.base import UUIDBase
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column
 
-type UserID = UUID
+type UserID = UUID  # type: ignore[valid-type]
 
 
 class User(UUIDBase):

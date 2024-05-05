@@ -1,18 +1,13 @@
-from datetime import datetime
-from typing import Annotated
+from typing import Annotated, Literal
 
 from httpx import AsyncClient
 from litestar import Controller, get
-from litestar.datastructures import Cookie
-from litestar.di import Provide
 from litestar.params import Parameter
-from litestar.response import Redirect, Response
+from litestar.response import Redirect
 
 from millserver.core.users import create_user, get_user_or_none_by_login
-from millserver.dependencies import provide_github_oauth
 from millserver.oauth.github import GithubOauth
 from millserver.repository import UserRepository
-from millserver.security.authentication_middleware import API_TOKEN_COOKIE_NAME
 from millserver.security.jwt import create_jwt_token
 
 ONE_YEAR = 60 * 60 * 24 * 365
@@ -39,7 +34,7 @@ class GithubOauthController(Controller):
             user_repository: UserRepository,
             github_oauth: GithubOauth,
             http_client: AsyncClient,
-    ) -> Response[dict]:
+    ) -> dict[Literal['token'], str]:
         github_access_token = await github_oauth.get_access_token(
             state=gh_state,
             code=code,
@@ -60,17 +55,9 @@ class GithubOauthController(Controller):
             )
         else:
             user_id = user.id
-        return Response(
-            content={'success': True},
-            cookies=(
-                Cookie(
-                    key=API_TOKEN_COOKIE_NAME,
-                    value=create_jwt_token(
-                        user_id=user_id,
-                        oauth_token=github_access_token,
-                    ),
-                    httponly=True,
-                    expires=int(datetime.now().timestamp()) + ONE_YEAR,
-                ),
+        return {
+            'token': create_jwt_token(
+                user_id=user_id,
+                oauth_token=github_access_token,
             ),
-        )
+        }

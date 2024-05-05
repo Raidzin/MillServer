@@ -20,5 +20,5 @@ async def create_user(
 async def get_user_or_none_by_login(
         login: str,
         user_repository: UserRepository,
-) -> User:
+) -> User | None:
     return await user_repository.get_one_or_none(login=login)
